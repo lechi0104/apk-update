@@ -1,0 +1,42 @@
+{
+  "build": {
+    "development": {
+      "android": {
+        "buildType": "apk"
+      },
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development"
+    },
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "distribution": "internal",
+      "environment": "preview"
+    },
+    "production": {
+      "android": {
+        "buildType": "apk",
+        "credentialsSource": "remote"
+      },
+      "environment": "production"
+    },
+    "production-local": {
+      "android": {
+        "buildType": "apk",
+        "credentialsSource": "local"
+      },
+      "environment": "production",
+      "node": "20.18.1",
+      "pnpm": "9.15.9"
+    }
+  },
+  "cli": {
+    "appVersionSource": "local",
+    "version": ">=16.13.4"
+  },
+  "submit": {
+    "production": {}
+  }
+}

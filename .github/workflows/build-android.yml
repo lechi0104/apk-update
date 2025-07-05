@@ -1,0 +1,107 @@
+name: EAS Build
+on:
+    workflow_dispatch:
+    push:
+        branches:
+            - main
+jobs:
+    build:
+        name: Build Android APK
+        runs-on: ubuntu-latest
+        steps:
+            - name: 🏗 Setup repo
+              uses: actions/checkout@v4
+
+            - name: 🏗 Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9
+                  run_install: false
+
+            - name: 🏗 Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.x
+
+            - name: 🏗 Setup EAS
+              uses: expo/expo-github-action@v8
+              with:
+                  eas-version: latest
+                  token: ${{ secrets.EXPO_TOKEN }}
+
+            - name: 🏗 Setup Java
+              uses: actions/setup-java@v4
+              with:
+                  distribution: 'temurin'
+                  java-version: '17'
+
+            - name: 🏗 Setup Android SDK
+              uses: android-actions/setup-android@v3
+
+            - name: 📦 Install dependencies
+              run: pnpm install --no-frozen-lockfile
+
+            - name: 🚀 Initialize EAS project
+              run: eas init --force --non-interactive
+
+            - name: 🔑 Generate debug keystore
+              run: |
+                  mkdir -p ~/.android
+                  keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+            - name: 🔑 Create credentials.json
+              run: |
+                  cat > credentials.json << EOF
+                  {
+                    "android": {
+                      "keystore": {
+                        "keystorePath": "$HOME/.android/debug.keystore",
+                        "keystorePassword": "android",
+                        "keyAlias": "androiddebugkey",
+                        "keyPassword": "android"
+                      }
+                    }
+                  }
+                  EOF
+
+            - name: 🚀 Build app locally
+              run: eas build --platform android --profile production-local --local --non-interactive
+              env:
+                  EAS_LOCAL_BUILD_SKIP_CLEANUP: 1
+                  NPM_CONFIG_FUND: false
+                  NPM_CONFIG_AUDIT: false
+
+            - name: � Find and rename APK
+              run: |
+                  APK_FILE=$(find . -name "*.apk" -type f | head -1)
+                  if [ -n "$APK_FILE" ]; then
+                      mv "$APK_FILE" app.apk
+                      echo "found apk: $APK_FILE"
+                  else
+                      echo "no apk found"
+                      exit 1
+                  fi
+
+            - name: 📤 Upload APK artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: apk-update-app
+                  path: app.apk
+                  retention-days: 30
+
+            - name: 📋 Get version
+              id: get_version
+              run: |
+                  VERSION=$(node -p "require('./app.json').expo.version")
+                  echo "version=v$VERSION" >> $GITHUB_OUTPUT
+                  echo "tag=v$VERSION-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+            - name: 🏷️ Create Release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  gh release create ${{ steps.get_version.outputs.tag }} \
+                    --title "APK Update ${{ steps.get_version.outputs.version }}" \
+                    --notes "Auto-generated release from commit ${{ github.sha }}" \
+                    --latest \
+                    app.apk

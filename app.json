@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "android": {
+      "package": "com.ovftank.apkupdateapp",
+      "permissions": [
+        "INTERNET",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK"
+      ]
+    },
+    "icon": "./assets/images/icon.png",
+    "name": "apk-update-app",
+    "plugins": [
+      "expo-router",
+      "expo-background-task",
+      "expo-task-manager",
+      "expo-notifications"
+    ],
+    "scheme": "apkupdateapp",
+    "slug": "apk-update-app",
+    "version": "1.0.0"
+  }
+}
