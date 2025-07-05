@@ -1,7 +1,7 @@
 {
   "expo": {
     "android": {
-      "package": "com.ovftank.apk-update",
+      "package": "com.ovftank.appupdater",
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
