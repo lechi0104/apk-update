@@ -1,3 +1,4 @@
+import { installAPK } from '@/services/permissionService';
 import * as BackgroundTask from 'expo-background-task';
 import * as FileSystem from 'expo-file-system';
 import * as SQLite from 'expo-sqlite';
@@ -64,6 +65,13 @@ const downloadAPK = async (version: string) => {
 
     if (downloadResult.status === 200) {
         await updateVersion(version);
+
+        try {
+            await installAPK(downloadResult.uri);
+        } catch (error) {
+            throw new Error(`install failed: ${error}`);
+        }
+
         return downloadResult.uri;
     } else {
         throw new Error(`download failed: ${downloadResult.status}`);
@@ -80,7 +88,29 @@ const checkForUpdates = async () => {
     const currentVersion = await getCurrentVersion();
 
     if (compareVersions(currentVersion, remoteVersion)) {
+        try {
+            const { scheduleNotificationAsync } = await import('expo-notifications');
+            await scheduleNotificationAsync({
+                content: {
+                    title: 'có update mới nè sếp',
+                    body: `phiên bản ${remoteVersion} đang cài... chờ tí nha <3`
+                },
+                trigger: null
+            });
+        } catch {}
+
         await downloadAPK(remoteVersion);
+
+        try {
+            const { scheduleNotificationAsync } = await import('expo-notifications');
+            await scheduleNotificationAsync({
+                content: {
+                    title: 'ok r nha sếp',
+                    body: `update lên v${remoteVersion} thành công, restart app đi <3`
+                },
+                trigger: null
+            });
+        } catch {}
     }
 };
 
@@ -98,7 +128,7 @@ export const registerBackgroundFetch = async () => {
         const status = await BackgroundTask.getStatusAsync();
         if (status === BackgroundTask.BackgroundTaskStatus.Available) {
             await BackgroundTask.registerTaskAsync(BACKGROUND_FETCH_TASK, {
-                minimumInterval: 15 * 60
+                minimumInterval: 10
             });
         }
     } catch {}
@@ -112,4 +142,4 @@ export const manualCheckUpdate = async () => {
     await checkForUpdates();
 };
 
-export { getCurrentVersion };
+export { checkForUpdates,getCurrentVersion };

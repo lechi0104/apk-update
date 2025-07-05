@@ -1,46 +1,60 @@
 import { getCurrentVersion } from '@/services/updateService';
-import { useEffect, useState } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
+import { useCallback,useEffect,useState } from 'react';
+import { AppState,AppStateStatus } from 'react-native';
 
 export const useUpdateStatus = () => {
-  const [currentVersion, setCurrentVersion] = useState('');
-  const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
+    const [currentVersion, setCurrentVersion] = useState('');
+    const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null);
+    const [isOnline, setIsOnline] = useState(true);
 
-  useEffect(() => {
-    loadCurrentVersion();
+    const loadCurrentVersion = useCallback(async () => {
+        if (!isOnline) {
+            return;
+        }
 
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
+        try {
+            const version = await getCurrentVersion();
+            setCurrentVersion(version);
+            setLastCheckTime(new Date());
+        } catch {
+
+        }
+    }, [isOnline]);
+
+    useEffect(() => {
         loadCurrentVersion();
-      }
+
+        const handleAppStateChange = (nextAppState: AppStateStatus) => {
+            if (nextAppState === 'active') {
+                loadCurrentVersion();
+            }
+        };
+
+        const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+
+        const unsubscribeNetInfo = NetInfo.addEventListener(state => {
+            setIsOnline(state.isConnected ?? false);
+        });
+
+        NetInfo.fetch().then(state => {
+            setIsOnline(state.isConnected ?? false);
+        });
+
+        return () => {
+            appStateSubscription?.remove();
+            unsubscribeNetInfo();
+        };
+    }, [loadCurrentVersion]);
+
+    const refreshVersion = async () => {
+        await loadCurrentVersion();
     };
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      subscription?.remove();
+    return {
+        currentVersion,
+        lastCheckTime,
+        isOnline,
+        refreshVersion
     };
-  }, []);
-
-  const loadCurrentVersion = async () => {
-    try {
-      const version = await getCurrentVersion();
-      setCurrentVersion(version);
-      setLastCheckTime(new Date());
-    } catch (error) {
-      console.log('lỗi load version:', error);
-    }
-  };
-
-  const refreshVersion = async () => {
-    await loadCurrentVersion();
-  };
-
-  return {
-    currentVersion,
-    lastCheckTime,
-    isOnline,
-    refreshVersion
-  };
 };

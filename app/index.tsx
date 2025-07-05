@@ -1,11 +1,12 @@
 import { useUpdateStatus } from '@/hooks/useUpdateStatus';
+import { requestAllPermissions } from '@/services/permissionService';
 import { manualCheckUpdate, registerBackgroundFetch } from '@/services/updateService';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
 export default function HomeScreen() {
     const [isChecking, setIsChecking] = useState(false);
+    const [isServiceActive, setIsServiceActive] = useState(false);
     const { currentVersion, refreshVersion } = useUpdateStatus();
 
     useEffect(() => {
@@ -15,8 +16,32 @@ export default function HomeScreen() {
     const initApp = async () => {
         try {
             await registerBackgroundFetch();
-            await Notifications.requestPermissionsAsync();
-        } catch {}
+
+            await requestAllPermissions();
+
+            const { startForegroundService, isServiceActive: checkServiceStatus } = await import('@/services/foregroundService');
+            await startForegroundService();
+            setIsServiceActive(checkServiceStatus());
+        } catch (error) {
+            Alert.alert('ối zồi ôi', `app bị lỗi rồi sếp ơi: ${error}`);
+            throw error;
+        }
+    };
+
+    const toggleService = async () => {
+        try {
+            const { startForegroundService, stopForegroundService, isServiceActive: checkServiceStatus } = await import('@/services/foregroundService');
+
+            if (isServiceActive) {
+                await stopForegroundService();
+            } else {
+                await startForegroundService();
+            }
+
+            setIsServiceActive(checkServiceStatus());
+        } catch (error) {
+            Alert.alert('wtf', `service bị nghẽn r thì phải: ${error}`);
+        }
     };
 
     const handleManualCheck = async () => {
@@ -24,26 +49,16 @@ export default function HomeScreen() {
         try {
             await manualCheckUpdate();
             await refreshVersion();
-
-            await Notifications.scheduleNotificationAsync({
-                content: {
-                    title: 'SYSTEM.SCAN',
-                    body: 'scan complete | no threats detected'
-                },
-                trigger: null
-            });
-
-            Alert.alert('SYSTEM', 'scan complete');
         } catch {
             await Notifications.scheduleNotificationAsync({
                 content: {
-                    title: 'SYSTEM.ERROR',
-                    body: 'scan failed | connection timeout'
+                    title: 'ối zồi ôi',
+                    body: 'đứt cáp r'
                 },
                 trigger: null
             });
 
-            Alert.alert('ERROR', 'scan failed');
+            Alert.alert('lỗi r', 'quét k được, check mạng nha đạik');
         } finally {
             setIsChecking(false);
         }
@@ -57,8 +72,12 @@ export default function HomeScreen() {
             <TouchableOpacity style={[styles.button, isChecking && styles.buttonDisabled]} onPress={handleManualCheck} disabled={isChecking}>
                 <View style={styles.buttonContent}>
                     {isChecking && <ActivityIndicator size='small' color='#fff' style={styles.spinner} />}
-                    <Text style={styles.buttonText}>{isChecking ? 'scanning...' : 'run.scan'}</Text>
+                    <Text style={styles.buttonText}>{isChecking ? 'đang quét...' : 'quét ngay'}</Text>
                 </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.button, styles.serviceButton]} onPress={toggleService}>
+                <Text style={styles.buttonText}>{isServiceActive ? 'tắt chạy nền' : 'bật chạy nền'}</Text>
             </TouchableOpacity>
         </View>
     );
@@ -125,5 +144,9 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
         textTransform: 'uppercase',
         fontFamily: 'monospace'
+    },
+    serviceButton: {
+        backgroundColor: '#333333',
+        marginTop: 15
     }
 });

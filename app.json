@@ -1,25 +1,37 @@
 {
   "expo": {
     "android": {
-      "package": "com.ovftank.apkupdateapp",
+      "package": "com.ovftank.apk-update",
       "permissions": [
         "INTERNET",
         "WRITE_EXTERNAL_STORAGE",
         "READ_EXTERNAL_STORAGE",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.WAKE_LOCK"
+        "MANAGE_EXTERNAL_STORAGE",
+        "REQUEST_INSTALL_PACKAGES",
+        "INSTALL_PACKAGES",
+        "DELETE_PACKAGES",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_WIFI_STATE",
+        "SYSTEM_ALERT_WINDOW",
+        "RECEIVE_BOOT_COMPLETED",
+        "WAKE_LOCK",
+        "FOREGROUND_SERVICE",
+        "BACKGROUND_TASK",
+        "ACCESS_DOWNLOAD_MANAGER",
+        "WRITE_SETTINGS"
       ]
     },
     "icon": "./assets/images/icon.png",
-    "name": "apk-update-app",
+    "name": "APK UPDATE",
     "plugins": [
       "expo-router",
       "expo-background-task",
       "expo-task-manager",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-intent-launcher"
     ],
-    "scheme": "apkupdateapp",
-    "slug": "apk-update-app",
-    "version": "1.0.0"
+    "scheme": "apk-update",
+    "slug": "apk-update",
+    "version": "1.0.1"
   }
 }
