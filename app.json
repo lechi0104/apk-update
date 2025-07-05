@@ -27,8 +27,7 @@
       "expo-router",
       "expo-background-task",
       "expo-task-manager",
-      "expo-notifications",
-      "expo-intent-launcher"
+      "expo-notifications"
     ],
     "scheme": "apk-update",
     "slug": "apk-update",
